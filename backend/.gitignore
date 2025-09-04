@@ -1,0 +1,21 @@
+ # Node modules
+node_modules/
+
+# TypeScript build output
+dist/
+build/
+
+# Env files
+.env
+.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Mac / Windows system files
+.DS_Store
+Thumbs.db
