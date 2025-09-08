@@ -5,12 +5,14 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import errorHandler from './middleware/errorHandler';
 import catchError from './utils/catchError';
+import { OK } from './constants/http';
+import { authRoutes } from './routes/auth.route';
 
 const app = express();
 
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); 
 app.use(
     cors({
         origin: APP_ORIGIN,
@@ -23,15 +25,14 @@ app.use(cookieParser())
 
 
 
-app.get('/', (req, res) => {
-    catchError(async (req, res, next) => {
-        throw new Error('This is a test error');
-        return res.status(200).json({
-            status: "success"
-        })
+app.get(
+    '/',
+    ((req, res, next) => {
+        return res.status(OK).json({ status: "success" })
     })
-})
+)
 
+app.use("/auth" , authRoutes)
 app.use(errorHandler);
 
 app.listen(PORT, async () => {
