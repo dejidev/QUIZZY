@@ -5,8 +5,10 @@ import SessionModel from "../models/session.model";
 import UserModel from "../models/user.model";
 import VerificationCodeModel from "../models/verificationCode.model";
 import appAssert from "../utils/appAsert";
-import { oneYearFromNow } from "../utils/date";
+import { ONE_DAY_MS, oneYearFromNow, thirtyDaysFromNow } from "../utils/date";
 import jwt from "jsonwebtoken";
+import { RefreshTokenPayload, refreshTokenSignOptions, signToken, verifyToken } from "../utils/jwt";
+import { now } from "mongoose";
 
 export type CreateAccountParams = {
     email: string;
@@ -33,9 +35,11 @@ export const createAccount = async (data: CreateAccountParams) => {
         password: data.password,
     })
 
+    const userId = user.id
+
     //Create verification code
     const verificationCode = await VerificationCodeModel.create({
-        userId: user._id,
+        userId,
         type: VerificationCodeTypes.EmailVerification,
         expiresAt: oneYearFromNow()
     })
@@ -45,30 +49,21 @@ export const createAccount = async (data: CreateAccountParams) => {
 
     //CREATE SESSION
     const session = await SessionModel.create({
-        userId: user._id,
+        userId,
         userAgent: data.userAgent,
     })
 
 
     //Sign access toekn and refresh
-    const refreshToken = jwt.sign(
+    const refreshToken = signToken(
         { sessionId: session._id },
-        JWT_REFRESH_SECRET,
-        {
-            audience: ["user"],
-            expiresIn: "30d"
-        }
+        refreshTokenSignOptions
     )
 
-    const accessToken = jwt.sign(
+    const accessToken = signToken(
         {
-            userId: user._id,
+            userId,
             sessionId: session._id
-        },
-        JWT_SECRET,
-        {
-            audience: ["user"],
-            expiresIn: "30d"
         }
     )
 
@@ -97,7 +92,8 @@ export const loginUser = async ({ email, password, userAgent }: LoginParams) => 
     appAssert(user, UNAUTHORIZED, "Invalid Email or Password");
 
     //validate the password from the request
-    const userId = user._id;
+    const userId = user.id;
+    console.log(userId)
     //create a session
     const session = await SessionModel.create({
         userId,
@@ -107,28 +103,21 @@ export const loginUser = async ({ email, password, userAgent }: LoginParams) => 
     const sessionInfo = {
         sessionId: session._id,
     }
-    //sign access token & refresh
+
     //Sign access toekn and refresh
-    const refreshToken = jwt.sign(
+    const refreshToken = signToken(
         sessionInfo,
-        JWT_REFRESH_SECRET,
+        refreshTokenSignOptions
+    )
+
+    const accessToken = signToken(
         {
-            audience: ["user"],
-            expiresIn: "30d"
+            ...sessionInfo,
+            userId,
         }
     )
 
-    const accessToken = jwt.sign(
-        {
-            ...sessionInfo,
-            userId: user._id,
-        },
-        JWT_SECRET,
-        {
-            audience: ["user"],
-            expiresIn: "30d"
-        }
-    )
+
 
     //return user & token
     return {
@@ -137,3 +126,47 @@ export const loginUser = async ({ email, password, userAgent }: LoginParams) => 
         refreshToken
     };
 }
+
+
+
+
+export const refreshUserAccessToken = async (refreshToken: string) => {
+    const { payload } = verifyToken<RefreshTokenPayload>(refreshToken, {
+        secret: refreshTokenSignOptions.secret
+    })
+
+    appAssert(payload, UNAUTHORIZED, "Invalid refresh token");
+
+    const session = await SessionModel.findById(payload.sessionId)
+    appAssert(session
+        && session.expiresAt.getTime() > now,
+        UNAUTHORIZED,
+        "Session expired");
+
+
+    const sessionNeedsRefresh = session.expiresAt.getTime() - now <= ONE_DAY_MS
+
+    if (sessionNeedsRefresh) {
+        session.expiresAt = thirtyDaysFromNow();
+        await session.save();
+    }
+
+    const newRefreshToken = sessionNeedsRefresh ? signToken({
+        sessionId: session._id
+    },
+        refreshTokenSignOptions) : undefined;
+
+    const accessToken = signToken({
+        userId: session.userId,
+        sessionId: session._id,
+    })
+
+
+    return {
+        accessToken,
+        newRefreshToken
+    }
+}
+
+
+

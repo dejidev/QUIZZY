@@ -1,8 +1,11 @@
-import { CREATED } from "../constants/http";
+import { CREATED, OK, UNAUTHORIZED } from "../constants/http";
 import { loginSchema, registerSchema } from "../models/auth.model";
-import { createAccount, loginUser } from "../services/auth.service";
+import SessionModel from "../models/session.model";
+import { createAccount, loginUser, refreshUserAccessToken } from "../services/auth.service";
+import appAssert from "../utils/appAsert";
 import catchError from "../utils/catchError";
-import { setAuthCookies } from "../utils/cookies";
+import { clearAuthCookies, getAccessTokenCookieOptions, setAuthCookies } from "../utils/cookies";
+import { AccessTokenPayLoad, verifyToken } from "../utils/jwt";
 
 
 
@@ -34,8 +37,46 @@ export const loginHandler = catchError(
             userAgent: req.headers["user-agent"]
         });
 
-        const {accessToken, refreshToken } = await loginUser(request);
+        const { user, accessToken, refreshToken } = await loginUser(request);
 
-        return setAuthCookies({res, accessToken, refreshToken})
+        return setAuthCookies({ res, accessToken, refreshToken }).json(user)
     }
-) 
+)
+
+
+
+export const logoutHandler = catchError(
+    async (req, res) => {
+        const accessToken = req.cookies.accessToken;
+        const { payload } = verifyToken<AccessTokenPayLoad>(accessToken || "");
+
+        if (payload) {
+            await SessionModel.findByIdAndDelete(payload.sessionId)
+        }
+        return clearAuthCookies(res).status(OK).json({
+            message: "Logout Successful"
+        })
+    }
+)
+
+
+
+
+export const refreshHandler = catchError(
+    async (req, res) => {
+        const refreshToken = req.cookies.refreshToken as string | undefined;
+        appAssert(refreshToken, UNAUTHORIZED, "Missing refresh Token")
+
+        const { accessToken, newRefreshToken } = await refreshUserAccessToken(refreshToken);
+
+if (refreshToken) {
+    res.cookie
+}
+
+        return res.status(OK)
+            .cookie("accessToken", accessToken, getAccessTokenCookieOptions()).json({
+                message: "Aceess Token Refreshed"
+            })
+    })
+
+

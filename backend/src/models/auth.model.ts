@@ -9,7 +9,6 @@ const passwordSchema = z.string().min(6).max(256)
 export const loginSchema = z.object({
     email: emailSchema,
     password: passwordSchema,
-    confirmPassword: z.string().min(6).max(256),
     userAgent: z.string().optional()
 })
 
@@ -24,6 +23,4 @@ export const registerSchema = loginSchema
         message: "Passwordds do not match",
         path: ["confirmPassword"]
     })
-
-
 

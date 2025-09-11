@@ -19,3 +19,6 @@ export function fifteenMinutesFromNow(): Date {
     now.setMinutes(now.getMinutes() + 15);
     return now;
 }
+
+
+export const ONE_DAY_MS = 24 * 60 * 60 * 1000
