@@ -1,14 +1,13 @@
 import { JWT_REFRESH_SECRET, JWT_SECRET } from "../constants/env";
-import { CONFLICT, UNAUTHORIZED } from "../constants/http";
+import { CONFLICT, INTERNAL_SERVER_ERROR, NOT_FOUND, UNAUTHORIZED } from "../constants/http";
 import VerificationCodeTypes from "../constants/verificationCodeTypes";
 import SessionModel from "../models/session.model";
 import UserModel from "../models/user.model";
 import VerificationCodeModel from "../models/verificationCode.model";
 import appAssert from "../utils/appAsert";
-import { ONE_DAY_MS, oneYearFromNow, thirtyDaysFromNow } from "../utils/date";
+import { now, ONE_DAY_MS, oneYearFromNow, thirtyDaysFromNow } from "../utils/date";
 import jwt from "jsonwebtoken";
 import { RefreshTokenPayload, refreshTokenSignOptions, signToken, verifyToken } from "../utils/jwt";
-import { now } from "mongoose";
 
 export type CreateAccountParams = {
     email: string;
@@ -170,3 +169,34 @@ export const refreshUserAccessToken = async (refreshToken: string) => {
 
 
 
+
+
+export const verifyEmail = async (code: string) => {
+    //get verification code
+    const validCode = await VerificationCodeModel.findOne({
+        _id: code,
+        type: VerificationCodeTypes.EmailVerification,
+        expiresAt: { $gt: new Date() }
+    })
+
+    appAssert(validCode, NOT_FOUND, "Invalid or expired verification code")
+
+    //get user by id
+    //update user to verified true
+    const updatedUser = await UserModel.findByIdAndUpdate(
+        validCode.userId,
+        {
+            verified: true,
+        },
+        { new: true }
+    );
+    console.log(updatedUser)
+    console.log(validCode)
+    appAssert(updatedUser, INTERNAL_SERVER_ERROR, "Failed to Verify Email")
+
+    await validCode.deleteOne();
+
+    return {
+        user: updatedUser.omitPassword(),
+    }
+}

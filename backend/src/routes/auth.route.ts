@@ -1,5 +1,12 @@
 import { Router } from "express";
-import { loginHandler, logoutHandler, registerHandler } from "../controllers/auth.controller";
+import {
+    loginHandler,
+    logoutHandler,
+    refreshHandler,
+    registerHandler,
+    verifyEmailHandler
+}
+    from "../controllers/auth.controller";
 
 export const authRoutes = Router();
 
@@ -8,4 +15,5 @@ export const authRoutes = Router();
 authRoutes.post("/register", registerHandler)
 authRoutes.post("/login", loginHandler)
 authRoutes.post("/logout", logoutHandler)
-authRoutes.post("/refresh", refreshHandler  )
+authRoutes.post("/refresh", refreshHandler)
+authRoutes.post("/email/verify/:code", verifyEmailHandler)

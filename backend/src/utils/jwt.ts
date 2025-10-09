@@ -3,6 +3,8 @@ import { SessionDocument } from "../models/session.model"
 import { UserDocument } from "../models/user.model"
 import { JWT_REFRESH_SECRET, JWT_SECRET } from "../constants/env"
 
+
+
 export type RefreshTokenPayload = {
     sessionId: SessionDocument["_id"];
 }
