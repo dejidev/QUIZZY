@@ -4,7 +4,7 @@ import SessionModel from "../models/session.model";
 import { createAccount, loginUser, refreshUserAccessToken, verifyEmail } from "../services/auth.service";
 import appAssert from "../utils/appAsert";
 import catchError from "../utils/catchError";
-import { clearAuthCookies, getAccessTokenCookieOptions, setAuthCookies } from "../utils/cookies";
+import { clearAuthCookies, getAccessTokenCookieOptions, getRefreshTokenCookieOptions, setAuthCookies } from "../utils/cookies";
 import { AccessTokenPayLoad, verifyToken } from "../utils/jwt";
 
 
@@ -69,12 +69,18 @@ export const refreshHandler = catchError(
 
         const { accessToken, newRefreshToken } = await refreshUserAccessToken(refreshToken);
 
-        if (refreshToken) {
-            res.cookie
+        // if (refreshToken) {
+        //     res.cookie
+        // }
+
+        if (newRefreshToken) {
+            res.cookie("refreshToken", newRefreshToken, getRefreshTokenCookieOptions());
         }
 
-        return res.status(OK)
-            .cookie("accessToken", accessToken, getAccessTokenCookieOptions()).json({
+        return res
+            .status(OK)
+            .cookie("accessToken", accessToken, getAccessTokenCookieOptions())
+            .json({
                 message: "Aceess Token Refreshed"
             })
     })
@@ -93,7 +99,7 @@ export const verifyEmailHandler = catchError(
 
         return res.status(OK).json(
             {
-                message: "Email was successfully verified"
+                message: "Email successfully verified"
             })
     }
 )

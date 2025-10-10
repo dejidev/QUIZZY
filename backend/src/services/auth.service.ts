@@ -181,7 +181,7 @@ export const verifyEmail = async (code: string) => {
 
     appAssert(validCode, NOT_FOUND, "Invalid or expired verification code")
 
-    //get user by id
+    //get user by id.
     //update user to verified true
     const updatedUser = await UserModel.findByIdAndUpdate(
         validCode.userId,
