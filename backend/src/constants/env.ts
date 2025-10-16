@@ -18,4 +18,4 @@ export const APP_ORIGIN = getEnv('APP_ORIGIN', 'http://localhost:5173');
 export const NODE_ENV = getEnv('NODE_ENV', 'development');  
 export const EMAIL_SENDER = getEnv('EMAIL_SENDER', 'a');
 export const RESEND_API_KEY = getEnv('RESEND_API_KEY', 'a');
-export const MONG0_PASSWORD = getEnv('MONG0_PASSWORD', 'quizybackend');     
+export const MONG0_PASSWORD = getEnv('MONG0_PASSWORD', 'quizybackend');   
